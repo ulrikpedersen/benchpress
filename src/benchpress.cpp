@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <sstream>
 using namespace std;
 
 #include <blosc.h>
@@ -18,12 +19,12 @@ using namespace std;
 #include <hdf5_hl.h>
 
 #include <boost/program_options.hpp>
+#include <boost/timer/timer.hpp>
 namespace po = boost::program_options;
-
 
 class Image {
 public:
-    Image() : pdata(NULL), bytes(0){};
+    Image() : pdata(NULL), bytes(0), typesize(0){};
     Image(unsigned int width, unsigned int height, int bpp, void* pdata);
     Image(unsigned int nbytes, void* pdata);
     Image(const Image& src);     // copy constructor
@@ -31,13 +32,27 @@ public:
     void next();                 // Increment pointer to next image position
     // Operators
     Image& operator=( const Image& src );
+    const void* data_ptr();
+    unsigned int frame_bytes() {return this->bytes;}
+    size_t get_typesize(){return this->typesize;}
 private:
     void * pdata;
     unsigned int bytes;
+    size_t typesize;
 };
 
 void * read_dataset(const string& file_name,
         const string& dataset_name, vector<Image>& images);
+vector<string> &split_string(const string &s, char delim, vector<string> &elems);
+
+vector<string> &split_string(const string &s, char delim, vector<string> &elems) {
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
 
 void * read_dataset(const string& file_name,
         const string& dataset_name, vector<Image>& images)
@@ -47,7 +62,6 @@ void * read_dataset(const string& file_name,
     H5T_class_t class_id;
     size_t type_size;
     hid_t file;
-    hid_t dtype;
 
     file = H5Fopen(file_name.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 
@@ -56,17 +70,16 @@ void * read_dataset(const string& file_name,
 
     herr = H5LTget_dataset_info(file, dataset_name.c_str(), dims, &class_id, &type_size);
 
-    unsigned int npixels = 1;
-    for (int i=0;i<rank; i++)
-    {
-        npixels *= dims[i];
-    }
+    unsigned int dset_pixels = 1;
+    for (int i=0;i<rank; i++) dset_pixels *= dims[i];
 
-    void * pdata = calloc(npixels, type_size);
+    void * pdata = calloc(dset_pixels, type_size);
     herr = H5LTread_dataset_int(file, dataset_name.c_str(), (int*)pdata);
 
     // Create a list of images and push it to the user supplied 'images' vector
-    Image img(npixels * type_size, pdata);
+    unsigned int frame_pixels = 1;
+    for (int i = 1; i<rank; i++) frame_pixels *= dims[i];
+    Image img(frame_pixels * type_size, pdata);
     for (unsigned int i = 0; i<dims[0]; i++)
     {
         images.push_back(img);
@@ -80,13 +93,13 @@ void * read_dataset(const string& file_name,
 
 
 Image::Image(unsigned int width, unsigned int height, int bpp, void* pdata)
- : pdata(pdata)
+ : pdata(pdata), typesize(bpp)
 {
     this->bytes = width * height * bpp;
 }
 
 Image::Image(unsigned int nbytes, void* pdata)
- : pdata(pdata), bytes(nbytes)
+ : pdata(pdata), bytes(nbytes), typesize(4)
 {
 }
 
@@ -94,6 +107,7 @@ Image::Image(const Image& src)
 {
     this->bytes = src.bytes;
     this->pdata = src.pdata;
+    this->typesize = src.typesize;
 }
 
 void Image::next(const Image& src)
@@ -111,32 +125,42 @@ Image& Image::operator=( const Image& src )
     if (this != &src) {
         this->bytes = src.bytes;
         this->pdata = src.pdata;
+        this->typesize = src.typesize;
     }
     return *this;
 }
 
+const void* Image::data_ptr()
+{
+    return this->pdata;
+}
 
 
 int main(int argc, char* argv[]) {
     int threads;
     int compress_level;
+    int shuffle;
+    string algorithm;
     po::options_description opt_desc("Available options");
     po::variables_map var_map;
+    const char * compression_algorithms = blosc_list_compressors();
 
+    // Handle CLI options and arguments
     try {
     opt_desc.add_options()
             ("help,h", "Show online help")
-            ("algorithm,a", po::value< string >()->default_value("blosclz"), "Compression algorithm")
+            ("algorithm,a", po::value< string >(&algorithm)->default_value("blosclz"), compression_algorithms)
             ("threads,t", po::value<int>(&threads)->default_value(1), "Number of threads to use")
             ("level,l", po::value<int>(&compress_level)->default_value(0), "Compression level [0..9]")
+            ("shuffle,s", po::value<int>(&shuffle)->default_value(1), "Precondition shuffle")
+            ("list", "List available compression algorithms")
             ("file", po::value< string >()->default_value(""), "Input file")
             ("dataset", po::value<string>()->default_value(""), "Input dataset")
     ;
 
     po::positional_options_description p;
-    p.add("file", 1);
-    p.add("dataset", 1);
-
+    p.add("file", 1);     // Input file name
+    p.add("dataset", 1);  // Input dataset (inside file)
 
     po::store(po::command_line_parser(argc, argv).options(opt_desc).positional(p).run(), var_map);
     po::notify(var_map);
@@ -144,6 +168,22 @@ int main(int argc, char* argv[]) {
     if (var_map.count("help")) {
         cout << opt_desc << "\n" << endl;
         return 1;
+    }
+
+    if (var_map.count("list")) {
+        vector<string> algo_list;
+        split_string(string (compression_algorithms), ',', algo_list);
+        cout << "Available compression algorithms:" << endl;
+        vector<string>::iterator it;
+        for (it = algo_list.begin(); it != algo_list.end(); ++it)
+        {
+            char * complib;
+            char * complib_version;
+            blosc_get_complib_info(const_cast<char*>( it->c_str() ), &complib, &complib_version);
+            cout << "\t" << it->c_str() << "\t" << complib_version << "\t" << complib << endl;
+            free(complib); free(complib_version);
+        }
+        return -1;
     }
 
     cout << "Reading from file: " << var_map["file"].as<string>() << endl;
@@ -157,19 +197,38 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Calculate data buffer sizes
-    // Read data from file
+    // Read the input images from the file/dataset and push
+    // into the images vector
     vector<Image> images;
     void * pdata = read_dataset(var_map["file"].as<string>(),
             var_map["dataset"].as<string>(), images);
 
     cout << "Number of images read: " << images.size() << endl;
 
-    // Timer
-    //    Compress data to memory buffer
+    // Initialise blosc and configure number of threads and algorithm
+    blosc_init();
+    blosc_set_nthreads(threads);
+    blosc_set_compressor(algorithm.c_str());
+    size_t dest_size = images[0].frame_bytes() + BLOSC_MAX_OVERHEAD;
+    void * dest_buf = calloc(dest_size, sizeof(char));
 
-    // Print report
+    // Loop through the vector of frames, compress each one and time the loop.
+    // The compressed data is not used - but the buffer is reused for next iteration
+    vector<Image>::iterator it;
+    for (it = images.begin(); it != images.end(); ++it)
+    {
+        boost::timer::auto_cpu_timer timer;
+        //cout << static_cast<const int*>(it->data_ptr())[0] << endl;
+        int cbytes = blosc_compress(compress_level, shuffle,
+                it->get_typesize(),it->frame_bytes(), it->data_ptr(),
+                dest_buf, dest_size);
+        double ratio = (double)cbytes/(double)(it->frame_bytes());
+        cout << "ratio: " << 1./ratio << " (" << cbytes << "/" << it->frame_bytes() << ")";
+        cout << " rate: " << endl;
+    }
 
+    blosc_destroy();
     free (pdata);
+    free(dest_buf);
     return 0;
 }
