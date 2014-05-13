@@ -143,6 +143,7 @@ int main(int argc, char* argv[]) {
     int threads;
     int compress_level;
     int shuffle;
+    bool verbose=false;
     string algorithm;
     po::options_description opt_desc("Available options");
     po::variables_map var_map;
@@ -157,6 +158,7 @@ int main(int argc, char* argv[]) {
             ("level,l", po::value<int>(&compress_level)->default_value(0), "Compression level [0..9]")
             ("shuffle,s", po::value<int>(&shuffle)->default_value(1), "Precondition shuffle")
             ("list", "List available compression algorithms")
+            ("verbose,v", "Print lots of timestamps")
             ("file", po::value< string >()->default_value(""), "Input file")
             ("dataset", po::value<string>()->default_value(""), "Input dataset")
     ;
@@ -168,6 +170,7 @@ int main(int argc, char* argv[]) {
     po::store(po::command_line_parser(argc, argv).options(opt_desc).positional(p).run(), var_map);
     po::notify(var_map);
 
+    if (var_map.count("verbose")) verbose = true;
     if (var_map.count("help")) {
         cout << opt_desc << "\n" << endl;
         return 1;
@@ -224,18 +227,20 @@ int main(int argc, char* argv[]) {
     unsigned long total_cbytes = 0;
     for (it = images.begin(); it != images.end(); ++it)
     {
-        //cout << static_cast<const int*>(it->data_ptr())[0] << endl;
         int cbytes = blosc_compress(compress_level, shuffle,
                 it->get_typesize(),it->frame_bytes(), it->data_ptr(),
                 dest_buf, dest_size);
         total_cbytes += cbytes;
-        double ratio = (double)cbytes/(double)(it->frame_bytes());
-        cout << "ratio: " << 1./ratio << " (" << cbytes << "/" << it->frame_bytes() << ")";
-        cout << " rate: " << endl;
-
-        cpu_times wus_times = timer.elapsed();
-        elapsed_times.push_back(wus_times);
-        cout << "wall: " << wus_times.wall/1000000000. << endl;
+        if (verbose)
+        {
+            double ratio = (double)cbytes/(double)(it->frame_bytes());
+            cout << "Ratio: " << 1./ratio << " (" << cbytes << "/" << it->frame_bytes() << ")";
+            cpu_times wus_times = timer.elapsed();
+            elapsed_times.push_back(wus_times);
+            cout << " Wall: "   << wus_times.wall/1000000000.;
+            cout << " User: "   << wus_times.user/1000000000.;
+            cout << " System: " << wus_times.system/1000000000. << endl;
+        }
     }
     timer.stop();
     cpu_times wus_final = timer.elapsed();
