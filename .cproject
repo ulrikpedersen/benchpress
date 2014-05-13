@@ -4,8 +4,8 @@
 		<cconfiguration id="cdt.managedbuild.config.gnu.exe.debug.867439984">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.debug.867439984" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<macros>
-					<stringMacro name="BOOST_DIR" type="VALUE_PATH_DIR" value="/dls_sw/prod/tools/RHEL6-x86_64/boost/1-48-0/prefix"/>
 					<stringMacro name="HDF5_DIR" type="VALUE_PATH_DIR" value="/dls_sw/prod/tools/RHEL6-x86_64/hdf5/1-8-11/prefix"/>
+					<stringMacro name="BOOST_DIR" type="VALUE_PATH_DIR" value="/dls_sw/prod/tools/RHEL6-x86_64/boost/1-48-0/prefix"/>
 					<stringMacro name="BLOSC_DIR" type="VALUE_PATH_DIR" value="/dls_sw/work/tools/RHEL6-x86_64/blosc/prefix"/>
 				</macros>
 				<externalSettings/>
@@ -52,9 +52,10 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hdf5"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hdf5_hl"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="boost_program_options"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="boost_timer"/>
 								</option>
-								<option id="gnu.cpp.link.option.other.1841886378" name="Other options (-Xlinker [option])" superClass="gnu.cpp.link.option.other" valueType="stringList"/>
-								<option id="gnu.cpp.link.option.flags.1665888546" superClass="gnu.cpp.link.option.flags" value="-Wl,-rpath,${BOOST_DIR}/lib -Wl,-rpath,${BLOSC_DIR}/lib -Wl,-rpath,${HDF5_DIR}/lib" valueType="string"/>
+								<option id="gnu.cpp.link.option.other.1841886378" name="Other options (-Xlinker [option])" superClass="gnu.cpp.link.option.other"/>
+								<option id="gnu.cpp.link.option.flags.1665888546" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-Wl,-rpath,${BOOST_DIR}/lib -Wl,-rpath,${BLOSC_DIR}/lib -Wl,-rpath,${HDF5_DIR}/lib" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.373830145" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -75,8 +76,9 @@
 		<cconfiguration id="cdt.managedbuild.config.gnu.exe.release.1989484461">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.release.1989484461" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<macros>
-					<stringMacro name="HDF5_DIR" type="VALUE_PATH_DIR" value="/dls_sw/prod/tools/RHEL6-x86_64/hdf5/1-8-11/prefix"/>
+					<stringMacro name="BOOST_DIR" type="VALUE_PATH_DIR" value="/dls_sw/prod/tools/RHEL6-x86_64/boost/1-48-0/prefix"/>
 					<stringMacro name="BLOSC_DIR" type="VALUE_PATH_DIR" value="/dls_sw/work/tools/RHEL6-x86_64/blosc/prefix"/>
+					<stringMacro name="HDF5_DIR" type="VALUE_PATH_DIR" value="/dls_sw/prod/tools/RHEL6-x86_64/hdf5/1-8-11/prefix"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -103,6 +105,7 @@
 									<listOptionValue builtIn="false" value="&quot;${BLOSC_DIR}/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${BOOST_DIR}/include&quot;"/>
 								</option>
+								<option id="gnu.cpp.compiler.option.optimization.flags.222252430" superClass="gnu.cpp.compiler.option.optimization.flags" value="-msse2" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.103482916" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.565993583" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
@@ -115,13 +118,14 @@
 								<option id="gnu.cpp.link.option.paths.1363003488" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${HDF5_DIR}/lib&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${BLOSC_DIR}/lib&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;../${BOOST_DIR}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${BOOST_DIR}/lib&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.2083399054" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="blosc"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hdf5"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="hdf5_hl"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="boost_program_options"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="boost_timer"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1467938776" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -160,5 +164,15 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
-	<storageModule moduleId="refreshScope"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/benchpress"/>
+		</configuration>
+		<configuration configurationName="Multiple configurations">
+			<resource resourceType="PROJECT" workspacePath="/benchpress"/>
+		</configuration>
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/benchpress"/>
+		</configuration>
+	</storageModule>
 </cproject>
