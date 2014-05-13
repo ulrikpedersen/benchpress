@@ -261,7 +261,8 @@ int main(int argc, char* argv[]) {
     cout << "Time: Wall=" << wus_final.wall/1000000000.;
     cout << "\tUser=" << wus_final.user/1000000000.;
     cout << "\tSystem=" << wus_final.system/1000000000. << endl;
-    cout << "RESULT: Ratio=" << ratio << "\tDatarate=" << data_rate << " MB/s" << endl;
+    cout << "CONFIG:\talgo=" << algorithm << "\tlevel=" << compress_level << "\tthreads=" << threads << endl;
+    cout << "RESULT:\tRatio=" << ratio << "\tDatarate=" << data_rate << " MB/s" << endl;
 
     blosc_destroy();
     free (pdata);
