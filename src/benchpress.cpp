@@ -144,6 +144,7 @@ int main(int argc, char* argv[]) {
     int compress_level;
     int shuffle;
     bool verbose=false;
+    int iterations;
     string algorithm;
     po::options_description opt_desc("Available options");
     po::variables_map var_map;
@@ -157,6 +158,7 @@ int main(int argc, char* argv[]) {
             ("threads,t", po::value<int>(&threads)->default_value(1), "Number of threads to use")
             ("level,l", po::value<int>(&compress_level)->default_value(0), "Compression level [0..9]")
             ("shuffle,s", po::value<int>(&shuffle)->default_value(1), "Precondition shuffle")
+            ("iterations,i", po::value<int>(&iterations)->default_value(1), "Number of iterations over input dataset")
             ("list", "List available compression algorithms")
             ("verbose,v", "Print lots of timestamps")
             ("file", po::value< string >()->default_value(""), "Input file")
@@ -225,36 +227,41 @@ int main(int argc, char* argv[]) {
 
     vector<Image>::iterator it;
     unsigned long total_cbytes = 0;
-    for (it = images.begin(); it != images.end(); ++it)
+
+    for (int i = 0; i<iterations; i++)
     {
-        int cbytes = blosc_compress(compress_level, shuffle,
-                it->get_typesize(),it->frame_bytes(), it->data_ptr(),
-                dest_buf, dest_size);
-        total_cbytes += cbytes;
-        if (verbose)
+        if (verbose) cout << "Iteration=" << i << endl;
+        for (it = images.begin(); it != images.end(); ++it)
         {
-            double ratio = (double)cbytes/(double)(it->frame_bytes());
-            cout << "Ratio: " << 1./ratio << " (" << cbytes << "/" << it->frame_bytes() << ")";
-            cpu_times wus_times = timer.elapsed();
-            elapsed_times.push_back(wus_times);
-            cout << " Wall: "   << wus_times.wall/1000000000.;
-            cout << " User: "   << wus_times.user/1000000000.;
-            cout << " System: " << wus_times.system/1000000000. << endl;
+            int cbytes = blosc_compress(compress_level, shuffle,
+                    it->get_typesize(),it->frame_bytes(), it->data_ptr(),
+                    dest_buf, dest_size);
+            total_cbytes += cbytes;
+            if (verbose)
+            {
+                double ratio = (double)cbytes/(double)(it->frame_bytes());
+                cout << "Ratio: " << 1./ratio << " (" << cbytes << "/" << it->frame_bytes() << ")";
+                cpu_times wus_times = timer.elapsed();
+                elapsed_times.push_back(wus_times);
+                cout << " Wall: "   << wus_times.wall/1000000000.;
+                cout << " User: "   << wus_times.user/1000000000.;
+                cout << " System: " << wus_times.system/1000000000. << endl;
+            }
         }
     }
     timer.stop();
     cpu_times wus_final = timer.elapsed();
 
-    double dset_megabyte = (images.size() * images[0].frame_bytes())/(1024.*1024.);
+    double dset_megabyte = (iterations * images.size() * images[0].frame_bytes())/(1024.*1024.);
     double comp_megabyte = total_cbytes/(1024. * 1024.);
     double ratio = dset_megabyte/comp_megabyte;
     double data_rate = dset_megabyte/(wus_final.wall/1000000000.);
 
-    cout << "Full dset time. Wall=" << wus_final.wall/1000000000.;
-    cout << " User: " << wus_final.user/1000000000.;
-    cout << " System: " << wus_final.system/1000000000. << endl;
-    cout << " dset: " << dset_megabyte << "MB   comp: " << comp_megabyte << "MB" << endl;
-    cout << "Ratio: " << ratio << " Data rate: " << data_rate << " MB/s" << endl;
+    cout << " Dataset=" << dset_megabyte << "MB\tCompressed=" << comp_megabyte << "MB" << endl;
+    cout << "Time: Wall=" << wus_final.wall/1000000000.;
+    cout << "\tUser=" << wus_final.user/1000000000.;
+    cout << "\tSystem=" << wus_final.system/1000000000. << endl;
+    cout << "RESULT: Ratio=" << ratio << "\tDatarate=" << data_rate << " MB/s" << endl;
 
     blosc_destroy();
     free (pdata);
