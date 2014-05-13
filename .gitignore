@@ -1,3 +1,14 @@
+# Backup files
+*~
+
+# Data files
+*.h5
+*.hdf
+*.hdf5
+*.log
+*.dat
+log*
+
 # Compiled Object files
 *.slo
 *.lo

@@ -252,6 +252,9 @@ int main(int argc, char* argv[]) {
     timer.stop();
     cpu_times wus_final = timer.elapsed();
 
+    size_t blocksize, one,two;
+    blosc_cbuffer_sizes(dest_buf, &one, &two, &blocksize);
+
     double dset_megabyte = (iterations * images.size() * images[0].frame_bytes())/(1024.*1024.);
     double comp_megabyte = total_cbytes/(1024. * 1024.);
     double ratio = dset_megabyte/comp_megabyte;
@@ -261,7 +264,7 @@ int main(int argc, char* argv[]) {
     cout << "Time: Wall=" << wus_final.wall/1000000000.;
     cout << "\tUser=" << wus_final.user/1000000000.;
     cout << "\tSystem=" << wus_final.system/1000000000. << endl;
-    cout << "CONFIG:\talgo=" << algorithm << "\tlevel=" << compress_level << "\tthreads=" << threads << endl;
+    cout << "CONFIG:\talgo=" << algorithm << "\tlevel=" << compress_level << "\tthreads=" << threads << "\tblocksize=" << blocksize << endl;
     cout << "RESULT:\tRatio=" << ratio << "\tDatarate=" << data_rate << " MB/s" << endl;
 
     blosc_destroy();
