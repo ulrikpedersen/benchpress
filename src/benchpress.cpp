@@ -21,6 +21,9 @@ using namespace std;
 #include <boost/program_options.hpp>
 #include <boost/timer/timer.hpp>
 namespace po = boost::program_options;
+using boost::timer::cpu_timer;
+using boost::timer::cpu_times;
+using boost::timer::nanosecond_type;
 
 class Image {
 public:
@@ -214,18 +217,39 @@ int main(int argc, char* argv[]) {
 
     // Loop through the vector of frames, compress each one and time the loop.
     // The compressed data is not used - but the buffer is reused for next iteration
+    vector<cpu_times> elapsed_times;
+    cpu_timer timer;
+
     vector<Image>::iterator it;
+    unsigned long total_cbytes = 0;
     for (it = images.begin(); it != images.end(); ++it)
     {
-        boost::timer::auto_cpu_timer timer;
         //cout << static_cast<const int*>(it->data_ptr())[0] << endl;
         int cbytes = blosc_compress(compress_level, shuffle,
                 it->get_typesize(),it->frame_bytes(), it->data_ptr(),
                 dest_buf, dest_size);
+        total_cbytes += cbytes;
         double ratio = (double)cbytes/(double)(it->frame_bytes());
         cout << "ratio: " << 1./ratio << " (" << cbytes << "/" << it->frame_bytes() << ")";
         cout << " rate: " << endl;
+
+        cpu_times wus_times = timer.elapsed();
+        elapsed_times.push_back(wus_times);
+        cout << "wall: " << wus_times.wall/1000000000. << endl;
     }
+    timer.stop();
+    cpu_times wus_final = timer.elapsed();
+
+    double dset_megabyte = (images.size() * images[0].frame_bytes())/(1024.*1024.);
+    double comp_megabyte = total_cbytes/(1024. * 1024.);
+    double ratio = dset_megabyte/comp_megabyte;
+    double data_rate = dset_megabyte/(wus_final.wall/1000000000.);
+
+    cout << "Full dset time. Wall=" << wus_final.wall/1000000000.;
+    cout << " User: " << wus_final.user/1000000000.;
+    cout << " System: " << wus_final.system/1000000000. << endl;
+    cout << " dset: " << dset_megabyte << "MB   comp: " << comp_megabyte << "MB" << endl;
+    cout << "Ratio: " << ratio << " Data rate: " << data_rate << " MB/s" << endl;
 
     blosc_destroy();
     free (pdata);
