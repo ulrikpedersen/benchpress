@@ -35,11 +35,15 @@ cecho ()
 
 
 threads="1"
-while getopts "ht:" opt
+iterations="1"
+algorithm="blosclz"
+while getopts "ht:i:a:" opt
 do
   case $opt in
 	h) echo "$usage"; exit;;
     t) threads="${OPTARG}";;
+    i) iterations="${OPTARG}";;
+    a) algorithm="${OPTARG}";;
 
     # Unknown option. No need for an error, getopts informs
     # the user itself.
@@ -60,12 +64,12 @@ input_dset=$2
 echo ${input_file}
 echo ${input_dset}
 
-for thread in `seq ${threads}`
+for thread in `seq ${threads} -1 1`
 do
-  for level in `seq 0 9`
+  for level in `seq 0 7`
     do
-      cmd="./Release/benchpress -l ${level} -t ${thread} -i 5 ${input_file} ${input_dset}"
-      #echo ${cmd}
+      cmd="./Release/benchpress --level ${level} --threads ${thread} --iterations ${iterations} --algorithm=${algorithm} ${input_file} ${input_dset}"
+      echo ${cmd} 1>&2
       ${cmd}
   done
 done
