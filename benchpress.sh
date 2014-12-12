@@ -64,9 +64,9 @@ input_dset=$2
 echo ${input_file}
 echo ${input_dset}
 
-for thread in `seq ${threads} -1 1`
+for thread in `seq ${threads} -2 1`
 do
-  for level in `seq 0 7`
+  for level in `seq 1 6`
     do
       cmd="./Release/benchpress --level ${level} --threads ${thread} --iterations ${iterations} --algorithm=${algorithm} ${input_file} ${input_dset}"
       echo ${cmd} 1>&2
