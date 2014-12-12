@@ -65,9 +65,9 @@ for i,threadcount in enumerate(results):
     
     plot(x,y, marker=markers[i])
 
-plot([1,6],[1280, 1280*6], linestyle='-.', color='black')
-ylim(0,12000)
-xlim(0,None)
+plot([1,5],[1280, 1280*6], linestyle='-.', color='black')
+ylim(0,8000)
+xlim(1,None)
 text(1.1, 1280+50, "10 GigE")    
 axhline(1280, linewidth=3, linestyle='-.', color='black')
 
