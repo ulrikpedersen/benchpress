@@ -29,7 +29,7 @@ class Image {
 public:
     Image() : pdata(NULL), bytes(0), typesize(0){};
     Image(unsigned int width, unsigned int height, int bpp, void* pdata);
-    Image(unsigned int nbytes, void* pdata);
+    Image(unsigned int npixels, size_t bpp, void* pdata);
     Image(const Image& src);     // copy constructor
     void next(const Image& src); // Increment pointer to next image after src
     void next();                 // Increment pointer to next image position
@@ -73,18 +73,26 @@ void * read_dataset(const string& file_name,
 
     herr = H5LTget_dataset_info(file, dataset_name.c_str(), dims, &class_id, &type_size);
 
+    hid_t dset = H5Dopen(file, dataset_name.c_str(), H5P_DATASET_ACCESS_DEFAULT);
+    hid_t dtype = H5Dget_type(dset);
+    H5Dclose(dset);
+
     unsigned int dset_pixels = 1;
     for (int i=0;i<rank; i++) dset_pixels *= dims[i];
 
     void * pdata = calloc(dset_pixels, type_size);
-    herr = H5LTread_dataset_int(file, dataset_name.c_str(), (int*)pdata);
+    herr = H5LTread_dataset(file, dataset_name.c_str(),dtype, pdata);
+    herr = H5Fclose(file);
 
     // Create a list of images and push it to the user supplied 'images' vector
     unsigned int frame_pixels = 1;
     for (int i = 1; i<rank; i++) frame_pixels *= dims[i];
-    Image img(frame_pixels * type_size, pdata);
+
     for (unsigned int i = 0; i<dims[0]; i++)
+    //for (unsigned int i = 0; i<1; i++)
     {
+        void *img_ptr = (char*)pdata + (frame_pixels * type_size * i);
+        Image img(frame_pixels, type_size, img_ptr);
         images.push_back(img);
         img.next();
     }
@@ -97,7 +105,6 @@ void * read_dataset(const string& file_name,
     cout << "Bytes per frame:  " << frame_pixels * type_size << endl;
 
     free(dims);
-    herr = H5Fclose(file);
     return pdata;
 }
 
@@ -108,8 +115,8 @@ Image::Image(unsigned int width, unsigned int height, int bpp, void* pdata)
     this->bytes = width * height * bpp;
 }
 
-Image::Image(unsigned int nbytes, void* pdata)
- : pdata(pdata), bytes(nbytes), typesize(4)
+Image::Image(unsigned int npixels, size_t bpp, void* pdata)
+ : pdata(pdata), bytes(npixels * bpp), typesize(bpp)
 {
 }
 
