@@ -89,6 +89,13 @@ void * read_dataset(const string& file_name,
         img.next();
     }
 
+    cout << "Number of dimensions: " << rank << " - ";
+    for (int i = 0; i<rank; i++) cout << dims[i] << ",";
+    cout << endl;
+    cout << "Bits per pixel:   " << type_size << endl;
+    cout << "Number of pixels: " << frame_pixels << endl;
+    cout << "Bytes per frame:  " << frame_pixels * type_size << endl;
+
     free(dims);
     herr = H5Fclose(file);
     return pdata;
@@ -208,8 +215,9 @@ int main(int argc, char* argv[]) {
     // Read the input images from the file/dataset and push
     // into the images vector
     vector<Image> images;
-    void * pdata = read_dataset(var_map["file"].as<string>(),
-            var_map["dataset"].as<string>(), images);
+    string fname = var_map["file"].as<string>();
+    string dsetname =  var_map["dataset"].as<string>();
+    void * pdata = read_dataset(fname, dsetname, images);
 
     cout << "Number of images read: " << images.size() << endl;
 
@@ -233,8 +241,10 @@ int main(int argc, char* argv[]) {
         if (verbose) cout << "Iteration=" << i << endl;
         for (it = images.begin(); it != images.end(); ++it)
         {
+            size_t typesize = it->get_typesize();
+            size_t framebytes = it->frame_bytes();
             int cbytes = blosc_compress(compress_level, shuffle,
-                    it->get_typesize(),it->frame_bytes(), it->data_ptr(),
+                    typesize,framebytes, it->data_ptr(),
                     dest_buf, dest_size);
             total_cbytes += cbytes;
             if (verbose)
