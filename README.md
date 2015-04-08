@@ -1,7 +1,7 @@
 benchpress
 ==========
 
-Compression test and benchmark tool
+Compression test and benchmark tool.
 
 How to run
 ==========
